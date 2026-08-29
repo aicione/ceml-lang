@@ -131,6 +131,8 @@ components:
 - `JFET` — polarity: `N` or `P`
 - `diode`
 
+> `polarity` omitted → defaults to the most common convention per type (`NPN`, `NMOS`, `N`) with a **warning**. An invalid `polarity` value (not one of the type's two options) is a **fatal error**.
+
 **Independent sources**
 - `voltage_source` — regime: `DC` or `AC`
 - `current_source` — regime: `DC` or `AC`
@@ -154,6 +156,18 @@ ac_behavior: open_circuit     # choke inductors
 > Capacitor blocks DC (open circuit) by default in every DC analysis, regardless of `ac_behavior` — this follows from the component's physics and needs no declaration.
 > `ac_behavior` only overrides AC-regime behavior, for the case where the actual capacitance is assumed large enough to be treated as ideal (`C → ∞`, e.g. bypass/coupling capacitors).
 > When `ac_behavior` is declared, `value` is no longer required — the declared behavior fully determines the component for analysis, so a numeric capacitance is not needed. `value` remains required (or must appear in `find`) when `ac_behavior` is absent.
+
+### Source regime
+
+```yaml
+regime: DC    # biasing / quiescent-point source
+regime: AC    # signal source
+```
+
+> `regime` is required on every `voltage_source` and `current_source` — absent or invalid `regime` on these types is a **fatal error**.
+> `regime: DC` → the source is used in DC/quiescent analysis at its declared `value`; in AC small-signal analysis it contributes nothing (`voltage_source` becomes a short, `current_source` becomes an open), same convention as an ideal DC supply node.
+> `regime: AC` → the source is used in AC small-signal analysis at its declared `value`; in DC/quiescent analysis it contributes nothing (`voltage_source` becomes a short, `current_source` becomes an open).
+> This is the formal basis for superposition between the DC and AC domains — every independent source counts in exactly one regime, never both.
 
 ---
 
@@ -284,11 +298,16 @@ GND    → always the circuit ground, cannot be used as a free name
 
 ### Reserved measurement functions
 ```
-V(A, B)         → voltage of A with respect to B
-I(A, B)         → current flowing from A to B
-I(COMP)         → current through component COMP
+Vdc(A, B)       → DC / quiescent voltage of A with respect to B
+Vac(A, B)       → AC / small-signal voltage of A with respect to B
+Idc(A, B)       → DC / quiescent current flowing from A to B
+Iac(A, B)       → AC / small-signal current flowing from A to B
+Idc(COMP)       → DC / quiescent current through component COMP
+Iac(COMP)       → AC / small-signal current through component COMP
 Z(A, B)         → impedance between nodes A and B
 ```
+> Regime is part of the function name, not an argument — there is no bare `V(A,B)` or `I(A,B)`/`I(COMP)`. This removes the ambiguity of which regime a plain measurement refers to.
+> `Z(A, B)` has no DC/AC variant — impedance is inherently an AC small-signal concept in CEML, same as `Zin`/`Zout`.
 
 ### Reserved behavioral functions
 ```
@@ -312,6 +331,7 @@ hfe(Q)                        → BJT current gain (β)
 ```
 > `Ig(Q)` is reserved but the LLM always assumes 0 for MOSFET/JFET — may be revised in future versions if needed.
 > `hfe(Q)` may appear in `given` (when the question states β explicitly) or in `find` (when β is the unknown). If absent from both, the default value applies (§6).
+> All functions in this section are DC / quiescent operating-point values by definition (`Ic(Q)` is the quiescent collector current ICQ, `Vce(Q)` is VCEQ, etc.) — there is no AC/small-signal variant of these, unlike `Vdc`/`Vac`/`Idc`/`Iac` above. This matches standard textbook convention: these symbols always denote the bias point used to linearize the small-signal model, never the incremental AC component.
 
 ### Reserved commercial value function
 ```
@@ -354,11 +374,14 @@ ABCD(i,j)       → parameter of the transmission matrix
 - Required pin not connected
 - `value` absent from component not listed in `find`, unless `ac_behavior` is declared (§4)
 - `polarized: true` on `resistor` or `inductor`
+- `regime` absent or invalid on `voltage_source` or `current_source`
+- `polarity` present but not a valid option for the component's type
 - Reserved function used without mandatory parameters
 
 ### Warnings — analysis continues, user is notified
 - Transistor without parameters → assumes default values (Decision #1)
 - VA absent in BJT → ro → ∞ (Decision #2)
+- `polarity` absent on `BJT`/`MOSFET`/`JFET` → assumes `NPN`/`NMOS`/`N` (Decision #21)
 - `vcc` and `vee` absent in `opamp` → ideal supply assumed
 - Node declared but not connected to any component
 - No `input` or `output` node declared
@@ -390,6 +413,10 @@ ABCD(i,j)       → parameter of the transmission matrix
 | 15 | `hfe(Q)` reserved for BJT β — valid in `given` or `find` |
 | 16 | `Commercial(COMPONENT, mode?, series?)` reserved — rounds a `find` result to an E12/E24/E48/E96 value; mode defaults to nearest, series defaults to E12 |
 | 17 | `.` (period) is the only accepted decimal separator |
+| 18 | Transistor internal parameter functions (Vbe(Q), Ic(Q), etc.) are always DC/quiescent by definition — no AC variant |
+| 19 | V(A,B)/I(A,B)/I(COMP) replaced by regime-qualified Vdc/Vac/Idc/Iac — regime is part of the function name, not an argument |
+| 20 | `regime` required on voltage_source/current_source — DC source is zeroed in AC analysis and vice versa (superposition basis); absent/invalid regime is a fatal error |
+| 21 | `polarity` omitted → defaults to NPN/NMOS/N with a warning; invalid `polarity` value is a fatal error |
 
 ---
 
