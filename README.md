@@ -18,34 +18,34 @@ circuit_id: "ce_amplifier_01"
 description: "BJT NPN Amplifier in common emitter form"
  
 nodes:
-  - id: GND
-    type: ground
-  - id: VCC
-    type: supply
-    value: 12
-  - id: N1
-  - id: N2
-  - id: Vin
-    type: input
-  - id: Vout
-    type: output
+    - id: GND
+      type: ground
+    - id: VCC
+      type: supply
+      value: 12
+    - id: N1
+    - id: N2
+    - id: Vin
+      type: input
+    - id: Vout
+      type: output
  
 components:
-  - id: RC
-    type: resistor
-    value: 4k7
-    pins: [VCC, N1]
-  - id: RB
-    type: resistor
-    value: 47k
-    pins: [VCC, N2]
-  - id: Q1
-    type: BJT
-    polarity: NPN
-    pins:
-      base: N2
-      collector: N1
-      emitter: GND
+    - id: RC
+      type: resistor
+      value: 4k7
+      pins: [VCC, N1]
+    - id: RB
+      type: resistor
+      value: 47k
+      pins: [VCC, N2]
+    - id: Q1
+      type: BJT
+      polarity: NPN
+      pins:
+        base: N2
+        collector: N1
+        emitter: GND
  
 specs:
   given:

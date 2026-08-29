@@ -37,23 +37,23 @@ Every circuit must have at least one `ground` node.
 
 ```yaml
 nodes:
-  - id: GND
-    type: ground
+    - id: GND
+      type: ground
 
-  - id: VCC
-    type: supply
-    value: 12        # V implicit
+    - id: VCC
+      type: supply
+      value: 12        # V implicit
 
-  - id: N1           # type omitted → inferred as internal
+    - id: N1           # type omitted → inferred as internal
 
-  - id: Vin
-    type: input
+    - id: Vin
+      type: input
 
-  - id: Vout
-    type: output
+    - id: Vout
+      type: output
 
-  - id: Vx
-    type: bidir      # simultaneously input and output
+    - id: Vx
+      type: bidir      # simultaneously input and output
 ```
 
 ### Valid node types
@@ -79,11 +79,11 @@ nodes:
 
 ```yaml
 components:
-  - id: R1            # required, unique
-    type: resistor    # required
-    value: 47k        # Ω implicit — omitted if listed in find
-    pins: [VCC, N1]   # required
-    role: string      # optional — semantic context
+    - id: R1            # required, unique
+      type: resistor    # required
+      value: 47k        # Ω implicit — omitted if listed in find
+      pins: [VCC, N1]   # required
+      role: string      # optional — semantic context
 ```
 
 ### Fields
@@ -112,6 +112,11 @@ components:
 ### Accepted magnitude suffixes
 
 `p, n, u, m, k, M, G` — standard engineering notation.
+
+### Decimal notation
+
+`.` (period) is the decimal separator, English/US convention — e.g. `0.7`, `4.7k`.
+`,` (comma) is not accepted as a decimal separator.
 
 ### Valid component types
 
@@ -145,6 +150,10 @@ components:
 ac_behavior: short_circuit    # bypass and coupling capacitors
 ac_behavior: open_circuit     # choke inductors
 ```
+
+> Capacitor blocks DC (open circuit) by default in every DC analysis, regardless of `ac_behavior` — this follows from the component's physics and needs no declaration.
+> `ac_behavior` only overrides AC-regime behavior, for the case where the actual capacitance is assumed large enough to be treated as ideal (`C → ∞`, e.g. bypass/coupling capacitors).
+> When `ac_behavior` is declared, `value` is no longer required — the declared behavior fully determines the component for analysis, so a numeric capacitance is not needed. `value` remains required (or must appear in `find`) when `ac_behavior` is absent.
 
 ---
 
@@ -299,8 +308,23 @@ Vbe(Q)    Vce(Q)    Vbc(Q)    → BJT internal voltages
 Vgs(Q)    Vds(Q)    Vgd(Q)    → MOSFET/JFET internal voltages
 Ic(Q)     Ib(Q)     Ie(Q)     → BJT internal currents
 Id(Q)     Ig(Q)     Is(Q)     → MOSFET/JFET internal currents
+hfe(Q)                        → BJT current gain (β)
 ```
 > `Ig(Q)` is reserved but the LLM always assumes 0 for MOSFET/JFET — may be revised in future versions if needed.
+> `hfe(Q)` may appear in `given` (when the question states β explicitly) or in `find` (when β is the unknown). If absent from both, the default value applies (§6).
+
+### Reserved commercial value function
+```
+Commercial(COMPONENT)
+Commercial(COMPONENT, mode)
+Commercial(COMPONENT, series)
+Commercial(COMPONENT, mode, series)
+```
+> Rounds the calculated theoretical value of `COMPONENT` to a standard value in `series`, per the constraint from `mode`.
+> `mode` (optional): `min` (round up — smallest commercial value ≥ theoretical value) | `max` (round down — largest commercial value ≤ theoretical value) | `nearest` — defaults to `nearest` when omitted.
+> `series` (optional): `E12` | `E24` | `E48` | `E96` — defaults to `E12` (RETMA R12: 10-12-15-18-22-27-33-39-47-56-68-82) when omitted.
+> `mode` and `series` may appear in either order after `COMPONENT` — each is matched by which of the two fixed token sets it belongs to, not by position.
+> Only valid in `find`, and only for a component whose theoretical value would otherwise be computed symbolically/numerically.
 
 ### Reserved two-port parameter functions
 ```
@@ -328,7 +352,7 @@ ABCD(i,j)       → parameter of the transmission matrix
 - Component referencing an undeclared node
 - No `ground` node declared
 - Required pin not connected
-- `value` absent from component not listed in `find`
+- `value` absent from component not listed in `find`, unless `ac_behavior` is declared (§4)
 - `polarized: true` on `resistor` or `inductor`
 - Reserved function used without mandatory parameters
 
@@ -362,6 +386,10 @@ ABCD(i,j)       → parameter of the transmission matrix
 | 11 | Diode: p = anode, n = cathode internally in the LLM |
 | 12 | Fixed terminals by type; polarized: true invalid for resistor and inductor |
 | 13 | Reserved words and functions in given/find; Ig(Q) = 0 by default; two-port indices i,j ∈ {1,2} |
+| 14 | Capacitor with `ac_behavior` declared → `value` no longer required; capacitor always opens in DC by default |
+| 15 | `hfe(Q)` reserved for BJT β — valid in `given` or `find` |
+| 16 | `Commercial(COMPONENT, mode?, series?)` reserved — rounds a `find` result to an E12/E24/E48/E96 value; mode defaults to nearest, series defaults to E12 |
+| 17 | `.` (period) is the only accepted decimal separator |
 
 ---
 
