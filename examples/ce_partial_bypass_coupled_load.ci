@@ -1,0 +1,70 @@
+ceml_version: "0.1"
+circuit_id: "ce_partial_bypass_coupled_load"
+description: "Common-emitter BJT amplifier with voltage-divider bias (Rx, Ry), partially AC-bypassed emitter resistor (RE || Cinf+resistor), and AC-coupled collector load (RC || Cinf+RL)"
+
+nodes:
+    - id: GND
+      type: ground
+    - id: Vin
+      type: input
+    - id: N1
+    - id: VCC
+      type: supply
+      value: 12
+    - id: N2
+    - id: N3
+    - id: Vout
+      type: output
+    - id: N4
+
+components:
+    - id: C1
+      type: capacitor
+      pins: [Vin, N1]
+      ac_behavior: short_circuit
+    - id: RY
+      type: resistor
+      pins: [VCC, N1]
+    - id: RX
+      type: resistor
+      pins: [N1, GND]
+    - id: Q1
+      type: BJT
+      polarity: NPN
+      pins:
+        base: N1
+        collector: N2
+        emitter: N3
+    - id: RC
+      type: resistor
+      value: 1k8
+      pins: [VCC, N2]
+    - id: C2
+      type: capacitor
+      pins: [N2, Vout]
+      ac_behavior: short_circuit
+    - id: RL
+      type: resistor
+      pins: [Vout, GND]
+    - id: RE
+      type: resistor
+      pins: [N3, GND]
+    - id: C3
+      type: capacitor
+      pins: [N3, N4]
+      ac_behavior: short_circuit
+    - id: R1
+      type: resistor
+      value: 1k5
+      pins: [N4, GND]
+
+specs:
+  given:
+    - Ic(Q1): 2m
+    - hfe(Q1): 120
+    - Vbe(Q1): 0.7
+  find:
+    - Commercial(RE, min)
+    - Commercial(RX)
+    - Commercial(RY)
+    - Commercial(RL)

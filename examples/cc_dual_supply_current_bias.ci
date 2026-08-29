@@ -1,0 +1,62 @@
+ceml_version: "0.1"
+circuit_id: "cc_dual_supply_current_bias"
+description: "Common-collector BJT amplifier (emitter follower), collector tied directly to +VCC, emitter current-source biased to -VCC with a parallel resistor, and AC-coupled load resistor (Cinf in series with RL)"
+
+nodes:
+    - id: GND
+      type: ground
+    - id: Vin
+      type: input
+    - id: N1
+    - id: VCC
+      type: supply
+      value: 5
+    - id: VEE
+      type: supply
+      value: -5
+    - id: N2
+    - id: Vout
+      type: output
+
+components:
+    - id: C1
+      type: capacitor
+      pins: [Vin, N1]
+      ac_behavior: short_circuit
+    - id: R1
+      type: resistor
+      value: 68k
+      pins: [N1, GND]
+    - id: Q1
+      type: BJT
+      polarity: NPN
+      pins:
+        base: N1
+        collector: VCC
+        emitter: N2
+    - id: I1
+      type: current_source
+      value: 2m
+      regime: DC
+      pins:
+        p: N2
+        n: VEE
+    - id: R2
+      type: resistor
+      value: 1k5
+      pins: [N2, VEE]
+    - id: C2
+      type: capacitor
+      pins: [N2, Vout]
+      ac_behavior: short_circuit
+    - id: R3
+      type: resistor
+      value: 3k9
+      pins: [Vout, VEE]
+
+specs:
+  given:
+    - Vbe(Q1): 0.7
+    - hfe(Q1): 200
+  find:
+    - Ic(Q1)
