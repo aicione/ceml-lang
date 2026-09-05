@@ -298,28 +298,37 @@ GND    → always the circuit ground, cannot be used as a free name
 
 ### Reserved measurement functions
 ```
-Vdc(A, B)       → DC / quiescent voltage of A with respect to B
-Vac(A, B)       → AC / small-signal voltage of A with respect to B
-Idc(A, B)       → DC / quiescent current flowing from A to B
-Iac(A, B)       → AC / small-signal current flowing from A to B
-Idc(COMP)       → DC / quiescent current through component COMP
-Iac(COMP)       → AC / small-signal current through component COMP
-Z(A, B)         → impedance between nodes A and B
+Vdc(A, B)          → DC / quiescent voltage of A with respect to B
+Vac(A, B, hf?)     → AC / small-signal voltage of A with respect to B
+Idc(A, B)          → DC / quiescent current flowing from A to B
+Iac(A, B, hf?)     → AC / small-signal current flowing from A to B
+Idc(COMP)          → DC / quiescent current through component COMP
+Iac(COMP, hf?)     → AC / small-signal current through component COMP
+Z(A, B, hf?)       → impedance between nodes A and B
 ```
 > Regime is part of the function name, not an argument — there is no bare `V(A,B)` or `I(A,B)`/`I(COMP)`. This removes the ambiguity of which regime a plain measurement refers to.
 > `Z(A, B)` has no DC/AC variant — impedance is inherently an AC small-signal concept in CEML, same as `Zin`/`Zout`.
+> `hf` is the optional frequency-band marker — see "Frequency band" below.
 
 ### Reserved behavioral functions
 ```
-Av(Vout, Vin)       → voltage gain
-Ai(Iout, Iin)       → current gain
-Rin(NODE_A, NODE_B) → input resistance seen between two nodes
-Rout(NODE_A, NODE_B)→ output resistance seen between two nodes
-Zin(NODE_A, NODE_B) → input impedance seen between two nodes
-Zout(NODE_A, NODE_B)→ output impedance seen between two nodes
-Zt(Vout, Iin)       → transimpedance (V/A)
-Yt(Iout, Vin)       → transconductance (A/V)
+Av(Vout, Vin, hf?)         → voltage gain
+Ai(Iout, Iin, hf?)         → current gain
+Rin(NODE_A, NODE_B, hf?)   → input resistance seen between two nodes
+Rout(NODE_A, NODE_B, hf?)  → output resistance seen between two nodes
+Zin(NODE_A, NODE_B, hf?)   → input impedance seen between two nodes
+Zout(NODE_A, NODE_B, hf?)  → output impedance seen between two nodes
+Zt(Vout, Iin, hf?)         → transimpedance (V/A)
+Yt(Iout, Vin, hf?)         → transconductance (A/V)
 ```
+
+### Frequency band
+
+> Every AC/small-signal function above (`Vac`, `Iac`, `Z`, `Av`, `Ai`, `Rin`, `Rout`, `Zin`, `Zout`, `Zt`, `Yt`) takes an optional trailing `hf` argument.
+> Argument omitted → **mid-band model**: `Cpi(Q)`/`Cmu(Q)` are ignored for every transistor in the circuit (Cπ = Cµ = 0), regardless of whether they were declared in `given`/`find`.
+> Argument is the literal token `hf` → **high-frequency model**: the full hybrid-π model applies, using each transistor's `Cpi(Q)`/`Cmu(Q)` (explicit `given` > part-number lookup > absent → 0 with warning, per Decision #22).
+> The same circuit's `find` list may freely mix both: e.g. `Av(Vout, Vin)` (mid-band) and `Av(Vout, Vin, hf)` (high-frequency) as separate entries, answering separate parts of the same question.
+> `hf` is only valid on the functions listed above. Passing it to a DC/quiescent function (`Vdc`, `Idc`, any transistor internal parameter function, `hfe(Q)`) or to `Commercial(...)` — none of which have a frequency-dependent variant — is a **fatal error**.
 
 ### Reserved transistor internal parameter functions
 ```
@@ -328,10 +337,17 @@ Vgs(Q)    Vds(Q)    Vgd(Q)    → MOSFET/JFET internal voltages
 Ic(Q)     Ib(Q)     Ie(Q)     → BJT internal currents
 Id(Q)     Ig(Q)     Is(Q)     → MOSFET/JFET internal currents
 hfe(Q)                        → BJT current gain (β)
+Cpi(Q)    Cmu(Q)              → BJT high-frequency internal capacitances (Cπ, Cµ)
+hie(Q)    hoe(Q)    hre(Q)    → BJT h-parameters (input impedance, output admittance, reverse voltage ratio)
 ```
 > `Ig(Q)` is reserved but the LLM always assumes 0 for MOSFET/JFET — may be revised in future versions if needed.
-> `hfe(Q)` may appear in `given` (when the question states β explicitly) or in `find` (when β is the unknown). If absent from both, the default value applies (§6).
-> All functions in this section are DC / quiescent operating-point values by definition (`Ic(Q)` is the quiescent collector current ICQ, `Vce(Q)` is VCEQ, etc.) — there is no AC/small-signal variant of these, unlike `Vdc`/`Vac`/`Idc`/`Iac` above. This matches standard textbook convention: these symbols always denote the bias point used to linearize the small-signal model, never the incremental AC component.
+> `Vbe(Q)`, `Vce(Q)`, `Vbc(Q)`, `Vgs(Q)`, `Vds(Q)`, `Vgd(Q)`, `Ic(Q)`, `Ib(Q)`, `Ie(Q)`, `Id(Q)`, `Ig(Q)`, `Is(Q)` are DC / quiescent operating-point values by definition (`Ic(Q)` is the quiescent collector current ICQ, `Vce(Q)` is VCEQ, etc.) — there is no AC/small-signal variant of these, unlike `Vdc`/`Vac`/`Idc`/`Iac` above. This matches standard textbook convention: these symbols always denote the bias point used to linearize the small-signal model, never the incremental AC component.
+> `hfe(Q)`, `Cpi(Q)`, `Cmu(Q)`, `hie(Q)`, `hoe(Q)` and `hre(Q)` are fixed device/technology parameters, not bias-point measurements — they may appear in `given` (when the question states the value) or in `find` (when it is the unknown).
+> `hfe(Q)` falls back to the default value (§6) if absent from both `given` and `find`. `Cpi(Q)`/`Cmu(Q)` have no universal default — if absent from both, high-frequency effects are ignored (Cπ = Cµ = 0, i.e. the ideal low/mid-frequency model) with a **warning**.
+> `Cpi(Q)`/`Cmu(Q)` use the same implicit unit and magnitude suffixes as `capacitor` (§4): Farads, `p, n, u, m, k, M, G`.
+> `hoe(Q)` and `VA` (§6) are two representations of the same physical quantity (`hoe = 1/ro`). Precedence: explicit `hoe(Q)` > explicit `VA` > default (`ro → ∞`, i.e. `hoe → 0`) with a **warning** — same underlying rule as Decision #2.
+> `hre(Q)` has no universal default; absent from both `given` and `find` → assumed 0 (negligible internal feedback) with a **warning**.
+> `hie(Q)` has no fixed universal default (it depends on bias current); absent from both `given` and `find` → derived from `hfe(Q)` and `Ic(Q)` as `hie = hfe · VT / Ic` (VT ≈ 26mV at room temperature) — no warning, since this is a standard model relationship, not a missing-data assumption.
 
 ### Reserved commercial value function
 ```
@@ -376,12 +392,16 @@ ABCD(i,j)       → parameter of the transmission matrix
 - `polarized: true` on `resistor` or `inductor`
 - `regime` absent or invalid on `voltage_source` or `current_source`
 - `polarity` present but not a valid option for the component's type
+- `hf` passed to a function with no frequency-dependent variant (§8)
 - Reserved function used without mandatory parameters
 
 ### Warnings — analysis continues, user is notified
 - Transistor without parameters → assumes default values (Decision #1)
 - VA absent in BJT → ro → ∞ (Decision #2)
 - `polarity` absent on `BJT`/`MOSFET`/`JFET` → assumes `NPN`/`NMOS`/`N` (Decision #21)
+- `Cpi(Q)`/`Cmu(Q)` absent from `given` and `find` → high-frequency effects ignored, Cπ = Cµ = 0 (Decision #22)
+- `hoe(Q)` and `VA` both absent → ro → ∞, hoe → 0 (Decision #24)
+- `hre(Q)` absent from `given` and `find` → assumed 0 (Decision #24)
 - `vcc` and `vee` absent in `opamp` → ideal supply assumed
 - Node declared but not connected to any component
 - No `input` or `output` node declared
@@ -417,6 +437,9 @@ ABCD(i,j)       → parameter of the transmission matrix
 | 19 | V(A,B)/I(A,B)/I(COMP) replaced by regime-qualified Vdc/Vac/Idc/Iac — regime is part of the function name, not an argument |
 | 20 | `regime` required on voltage_source/current_source — DC source is zeroed in AC analysis and vice versa (superposition basis); absent/invalid regime is a fatal error |
 | 21 | `polarity` omitted → defaults to NPN/NMOS/N with a warning; invalid `polarity` value is a fatal error |
+| 22 | `Cpi(Q)`/`Cmu(Q)` reserved for BJT high-frequency internal capacitances (Cπ, Cµ) — valid in given/find, no universal default; absent → ignored with a warning |
+| 23 | Optional `hf` argument on every AC/small-signal reserved function selects the high-frequency hybrid-π model per call; omitted → mid-band (Cπ = Cµ = 0). Lets one circuit mix mid-band and high-frequency `find` entries. `hf` on a non-frequency-dependent function is a fatal error |
+| 24 | `hie(Q)`/`hoe(Q)`/`hre(Q)` reserved for BJT h-parameters — valid in given/find. `hoe` ≡ `1/VA`-derived ro default; `hre` defaults to 0; `hie` derived from hfe and Ic when absent (no warning, standard model relationship) |
 
 ---
 
