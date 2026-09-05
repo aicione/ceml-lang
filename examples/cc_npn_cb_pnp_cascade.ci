@@ -1,0 +1,87 @@
+ceml_version: "0.1"
+circuit_id: "cc_npn_cb_pnp_cascade"
+description: "Two-stage cascade: NPN BJT in common-collector (emitter follower) driving a PNP BJT in common-base configuration"
+
+nodes:
+    - id: GND
+      type: ground
+    - id: Vin
+      type: input
+    - id: N1
+    - id: VCC
+      type: supply
+      value: 60
+    - id: N2
+    - id: N3
+    - id: N4
+    - id: Vout
+      type: output
+
+components:
+    - id: C1
+      type: capacitor
+      pins: [Vin, N1]
+      ac_behavior: short_circuit
+    - id: RX
+      type: resistor
+      pins: [Vin, VCC]
+      value: 10k
+    - id: RY
+      type: resistor
+      pins: [Vin, GND]
+      value: 100k
+    - id: Q1
+      type: BJT
+      polarity: NPN
+      pins:
+        base: N1
+        collector: VCC
+        emitter: N2
+    - id: RE1
+      type: resistor
+      pins: [N2, GND]
+      value: 4k7
+    - id: Q2
+      type: BJT
+      polarity: PNP
+      pins:
+        base: N4
+        collector: N3
+        emitter: N2
+    - id: RC2
+      type: resistor
+      pins: [N3, GND]
+      value: 10k
+    - id: RBC2
+      type: resistor
+      pins: [N3, N4]
+      value: 100k
+    - id: C2
+      type: capacitor
+      pins: [N4, GND]
+      ac_behavior: short_circuit
+    - id: C3
+      type: capacitor
+      pins: [N3, Vout]
+      ac_behavior: short_circuit
+    - id: RL
+      type: resistor
+      pins: [Vout, GND]
+      value: 5k6
+    - id: CL
+      type: capacitor
+      pins: [Vout, GND]
+      value: 12p
+
+specs:
+  given:
+    - hie(Q1): 1k
+    - hfe(Q1): 240
+    - Cpi(Q1): 87p
+    - Cmu(Q1): 3.7p
+    - hie(Q2): 750
+    - hfe(Q2): 150
+    - Cpi(Q2): 94.5p
+    - Cmu(Q2): 3.3p
+  find:
+    - Av(Vout, Vin)
