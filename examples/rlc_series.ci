@@ -1,0 +1,49 @@
+ceml_version: "0.1"
+circuit_id: "rlc_series"
+description: "Single-loop series RLC circuit driven by a voltage source generator — KNOWN LIMIT CASE, see notes below"
+
+# NOTE (kept intentionally, do not "fix" by adding R/L/C to find or giving them values):
+# The source question gives only |VR|, |VL|, |VC| (Vac across each element) — no A, no
+# frequency, no phase. From that data alone, R, L and C are NOT individually determinable:
+# 5 unknowns (I, omega, R, L, C) vs. 3 equations (VR=I*R, VL=I*omega*L, VC=I/(omega*C)).
+# What IS solvable from |VR|,|VL|,|VC| alone is Vs (amplitude), via the phasor voltage
+# triangle: Vs = VR + j(VL - VC) (KVL, phasor sum — NOT a scalar sum of magnitudes).
+#
+# R, L and C are deliberately left with no `value` and NOT listed in `find`. Per spec
+# section 9 this is a fatal error ("value absent from component not listed in find") —
+# that failure is the point of this example, not a bug to route around. A component
+# without a value that we're also not asking to find is out of AI.ciOne's scope: AI.ciOne
+# solves well-posed problems that converge to a definite result, it does not perform
+# open-ended feasibility/justification analysis ("is R computable? justify") even though
+# real exam questions sometimes ask exactly that. CEML's job is only to document the
+# circuit; it makes no claim that every documented circuit is solvable.
+
+nodes:
+    - id: GND
+      type: ground
+    - id: N1
+    - id: N2
+    - id: N3
+
+components:
+    - id: Vs
+      type: voltage_source
+      regime: AC
+      pins: {p: N1, n: GND}
+    - id: R
+      type: resistor
+      pins: [N1, N2]
+    - id: L
+      type: inductor
+      pins: [N2, N3]
+    - id: C
+      type: capacitor
+      pins: [N3, GND]
+
+specs:
+  given:
+    - Vac(N1, N2): 6
+    - Vac(N2, N3): 2
+    - Vac(N3, GND): 10
+  find:
+    - Vs
