@@ -118,6 +118,12 @@ components:
 `.` (period) is the decimal separator, English/US convention — e.g. `0.7`, `4.7k`.
 `,` (comma) is not accepted as a decimal separator.
 
+`4k7` is also accepted as an equivalent shorthand for `4.7k` — the magnitude suffix placed
+where the decimal point would go, standard resistor color-code marking convention (e.g.
+`4k7` = 4.7 kΩ, `1k5` = 1.5 kΩ, `3k9` = 3.9 kΩ). Both forms are valid and interchangeable;
+this does not apply to the base SI unit position itself (no suffix) — there is no equivalent
+shorthand for a bare decimal like `4.7` with no magnitude suffix.
+
 ### Valid component types
 
 **Passives**
@@ -168,6 +174,23 @@ regime: AC    # signal source
 > `regime: DC` → the source is used in DC/quiescent analysis at its declared `value`; in AC small-signal analysis it contributes nothing (`voltage_source` becomes a short, `current_source` becomes an open), same convention as an ideal DC supply node.
 > `regime: AC` → the source is used in AC small-signal analysis at its declared `value`; in DC/quiescent analysis it contributes nothing (`voltage_source` becomes a short, `current_source` becomes an open).
 > This is the formal basis for superposition between the DC and AC domains — every independent source counts in exactly one regime, never both.
+
+### Source magnitude and phase (AC sources)
+
+```yaml
+- id: Vs
+  type: voltage_source
+  regime: AC
+  value: 10        # amplitude — peak by default
+  rms: true         # optional, default false
+  phase: 30         # optional, degrees, default 0
+  pins: {p: N1, n: GND}
+```
+
+> `value` on a `regime: AC` source is the **peak amplitude** by default — i.e. `value` and `phase` together mean `v(t) = value · cos(ωt + phase)`, with ω taken from `freq` in `specs.given` (§7). This is a fixed convention, not configurable per-field name — there is no separate "peak" flag, only the `rms` override below.
+> `rms: true` (optional, default `false`) declares that `value` is an **RMS** magnitude instead of peak: `v(t) = value · √2 · cos(ωt + phase)`. Only valid on `regime: AC` sources — `rms` present on a `regime: DC` source is a **fatal error** (a DC value has no peak/RMS distinction).
+> `phase` (optional, default `0`) is in **degrees**. Only valid on `regime: AC` sources — `phase` present on a `regime: DC` source is a **fatal error**.
+> There is no free-text "equation" field for a source's waveform — `value` + `rms` + `phase` + the circuit's `freq` fully determine it, matching CEML's structured-field philosophy over raw symbolic expressions.
 
 ---
 
@@ -220,6 +243,7 @@ polarized omitted → assumes false → simple list
 
 > Diode: `p` = anode and `n` = cathode internally in the LLM.
 > OpAmp: `vcc` and `vee` omitted → LLM assumes ideal supply and warns the user.
+> OpAmp: only the **ideal opamp model** (virtual short, infinite open-loop gain, infinite input impedance, zero output impedance, no offset) is supported in v0.1 — there is no field for finite open-loop gain, GBW, input bias current, or offset voltage. This is a deliberate scope decision, not an oversight; revisit only if a real exam question needs a non-ideal opamp model.
 
 ### Dependent sources
 
@@ -286,6 +310,12 @@ specs:
 - A component without a declared `value` **must** appear in `find` — otherwise it is a **fatal error**
 - Any behavioral parameter can appear in either `given` or `find`
 - Symbolic expressions are valid in `value` and `given`: e.g. `"2 * R1"`
+- `given` may be omitted entirely when every known parameter is already captured by component
+  `value` fields in `nodes`/`components` — there's nothing left to declare (e.g. a purely
+  resistive network with an ideal opamp has no frequency, no transistor parameters, nothing
+  beyond the resistor values already given inline). Prefer omitting the `given:` key entirely
+  over leaving it present with nothing under it — `given:` with no content parses as
+  `given: null`, not an empty list, which is best avoided.
 
 ---
 
@@ -373,6 +403,15 @@ ABCD(i,j)       → parameter of the transmission matrix
 > `Zparam`, `Yparam`, `Hparam`, `Gparam` and `ABCD` take integer indices `i,j ∈ {1,2}` — unlike `Z(A,B)` which takes circuit nodes.
 > `ABCD(i,j)` only accepts `(1,1)`, `(1,2)`, `(2,1)`, `(2,2)` corresponding to the positions of the 2x2 transmission matrix.
 
+### Reserved multi-input expression function
+```
+Expr(TARGET, VAR1, VAR2, ..., VARn)
+```
+> Returns the **symbolic expression** for the voltage at node `TARGET` as a function of the voltages at nodes `VAR1..VARn` (each referenced to `GND`), e.g. `Expr(Vo, Vin1, Vin2, Vin3)` for a multi-input opamp network.
+> `Expr` takes variable arity (`TARGET` plus at least one `VAR`) — every other reserved function has fixed arity of 1 or 2. It's also the only reserved function whose result is a symbolic expression rather than a single number/ratio.
+> Only valid in `find` — there is nothing to declare in `given` for it, deriving the expression is exactly the point.
+> `TARGET` and every `VARi` must be already-declared nodes of type `input`, `output`, `internal`, or `bidir` — `ground` or `supply` nodes are invalid here (fatal error).
+
 ### General rules
 - Free names in `find` cannot match any reserved word or function
 - Reserved functions require mandatory parameters — using without parameters is a **fatal error**
@@ -393,6 +432,8 @@ ABCD(i,j)       → parameter of the transmission matrix
 - `regime` absent or invalid on `voltage_source` or `current_source`
 - `polarity` present but not a valid option for the component's type
 - `hf` passed to a function with no frequency-dependent variant (§8)
+- `rms` or `phase` present on a `regime: DC` source
+- `Expr(...)` referencing a `ground` or `supply` node as `TARGET` or any `VAR`
 - Reserved function used without mandatory parameters
 
 ### Warnings — analysis continues, user is notified
@@ -440,6 +481,11 @@ ABCD(i,j)       → parameter of the transmission matrix
 | 22 | `Cpi(Q)`/`Cmu(Q)` reserved for BJT high-frequency internal capacitances (Cπ, Cµ) — valid in given/find, no universal default; absent → ignored with a warning |
 | 23 | Optional `hf` argument on every AC/small-signal reserved function selects the high-frequency hybrid-π model per call; omitted → mid-band (Cπ = Cµ = 0). Lets one circuit mix mid-band and high-frequency `find` entries. `hf` on a non-frequency-dependent function is a fatal error |
 | 24 | `hie(Q)`/`hoe(Q)`/`hre(Q)` reserved for BJT h-parameters — valid in given/find. `hoe` ≡ `1/VA`-derived ro default; `hre` defaults to 0; `hie` derived from hfe and Ic when absent (no warning, standard model relationship) |
+| 25 | `value` on an AC source is peak amplitude by default; `rms: true` overrides to RMS. New `phase` field (degrees, default 0) completes the waveform. No free-text equation field — both invalid on `regime: DC` sources (fatal error) |
+| 26 | Only the ideal opamp model is supported in v0.1 (virtual short, infinite gain/Zin, zero Zout) — no finite gain/GBW/bias-current/offset fields, deliberate scope decision |
+| 27 | `4k7` accepted as shorthand for `4.7k` (suffix-as-decimal-point, standard resistor marking convention) — equivalent and interchangeable with the `4.7k` form |
+| 28 | `given` may be omitted entirely when component `value` fields already capture everything known — avoids `given: null` from an empty key |
+| 29 | `Expr(TARGET, VAR1, ..., VARn)` reserved — first variable-arity function, returns a symbolic expression (not a number) for TARGET as a function of the VARs; find-only |
 
 ---
 
