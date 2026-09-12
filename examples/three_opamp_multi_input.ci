@@ -1,0 +1,91 @@
+ceml_version: "0.1"
+circuit_id: "three_opamp_multi_input"
+description: "Three-opamp circuit with three inputs and one output, output expressed as a function of the three inputs"
+
+nodes:
+    - id: GND
+      type: ground
+    - id: Vin1
+      type: input
+    - id: Vin2
+      type: input
+    - id: Vin3
+      type: input
+    - id: Vo
+      type: output
+    - id: N1
+    - id: N2
+    - id: N3
+    - id: N4
+    - id: N5
+    - id: N6
+    - id: N7
+    - id: N8
+
+components:
+    - id: R1
+      type: resistor
+      pins: [Vin1, N1]
+      value: 22k
+    - id: R2
+      type: resistor
+      pins: [N2, GND]
+      value: 22k
+    - id: R3
+      type: resistor
+      pins: [N2, N3]
+      value: 22k
+    - id: opamp1
+      type: opamp
+      pins:
+        in+: N1
+        in-: N2
+        out: N3
+    - id: R4
+      type: resistor
+      pins: [N3, N4]
+      value: 12k
+    - id: R5
+      type: resistor
+      pins: [N4, Vo]
+      value: 18k
+    - id: opamp2
+      type: opamp
+      pins:
+        in+: N5
+        in-: N4
+        out: Vo
+    - id: R6
+      type: resistor
+      pins: [N5, GND]
+      value: 4k7
+    - id: R7
+      type: resistor
+      pins: [N4, N6]
+      value: 18k
+    - id: R8
+      type: resistor
+      pins: [N6, N7]
+      value: 33k
+    - id: opamp3
+      type: opamp
+      pins:
+        in+: N8
+        in-: N7
+        out: N6
+    - id: R9
+      type: resistor
+      pins: [N7, Vin2]
+      value: 22k
+    - id: R10
+      type: resistor
+      pins: [N8, GND]
+      value: 33k
+    - id: R11
+      type: resistor
+      pins: [N8, Vin3]
+      value: 22k
+
+specs:
+  find:
+    - Expr(Vo, Vin1, Vin2, Vin3)
