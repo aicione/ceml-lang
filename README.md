@@ -63,6 +63,32 @@ The SPICE was designed for numeric simulation, not for analytic reasoning. It do
 
 ---
 
+## Scope: what CEML/AI.ciOne is (and isn't) for
+
+CEML's job is to **document a circuit** — topology, knowns, and unknowns. It makes no claim
+that every circuit written in CEML is solvable.
+
+AI.ciOne's job is to **solve well-posed problems that converge to a definite result** —
+find the value(s) listed in `find`, given the circuit and the values in `given`. It is not
+meant to perform open-ended feasibility or justification analysis (e.g. "is it possible to
+determine R from this data? justify your answer") — a common style of exam question, but out
+of scope here. If a circuit's `find` targets are underdetermined by its `given` data, that's a
+property of the exam question, not something CEML/AI.ciOne is meant to route around or explain qualitatively.
+
+See `examples/rlc_series.ci` for a worked case: only the AC voltage magnitudes across R, L
+and C are given (no source amplitude, frequency, or phase) — enough to solve for the source's
+amplitude via the phasor voltage triangle, but not enough to solve for R, L, or C individually.
+That file deliberately leaves R, L, C without a value and out of `find`, which fails CEML's own
+validation rule (§9) — that failure is intentional, not a bug.
+
+**MVP scope note:** the MVP targets circuits with a single, well-posed solution — `given` fully
+determines every `find` target, no ambiguity. Circuits that admit multiple valid solutions (a
+real possibility once solving tools exist downstream) are explicitly out of scope for now. If the
+solvable-circuit approach proves out and the project moves past MVP, multiple-solution handling
+is the natural next frontier to tackle — not before.
+
+---
+
 ## Repository Structure
 
 ```
