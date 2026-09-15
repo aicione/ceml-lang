@@ -37,6 +37,17 @@ actual rule written into the relevant section (§4 Components, §5 Pinout, §6 T
 §8 Reserved words, or §9 Validation). This is the core feedback loop of the project — two example
 circuits so far produced 11 new decisions (14–24). Expect this to keep happening.
 
+## Language convention
+
+Everything in this repository must be written in **English**:
+- All source code, identifiers, types, and module names.
+- All code comments and docstrings.
+- All documentation, ADRs in `decisions/`, specification documents in `spec/`, and READMEs.
+- All commit messages (`feat(...)`, `fix(...)`, etc.).
+- All circuit metadata (`description` fields in `.ci` files).
+
+Even though the source course material originates from Brazilian Portuguese "Eletrônica III", no Portuguese text should appear in repository code, comments, or documentation.
+
 ## File and naming conventions
 
 - Placeholder examples are named `example_N.ci` (numbered stub, only a header + TODO skeleton)
