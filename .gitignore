@@ -17,3 +17,8 @@ htmlcov/
 .idea/
 *.swp
 *~
+
+# Build and Packaging
+build/
+dist/
+*.egg-info/
