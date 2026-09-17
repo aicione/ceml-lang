@@ -1,0 +1,66 @@
+ceml_version: "0.1"
+circuit_id: "cd_fet_source_follower_freq_response"
+description: "Common-drain (source follower) NMOS amplifier with source load RS, capacitive load CS, and high-frequency compensation capacitor Cext"
+
+nodes:
+    - id: GND
+      type: ground
+    - id: Vin
+      type: input
+    - id: N1
+    - id: VDD
+      type: supply
+    - id: N2
+    - id: Vout
+      type: output
+
+components:
+    - id: C1
+      type: capacitor
+      pins: [Vin, N1]
+      ac_behavior: short_circuit
+    - id: RY
+      type: resistor
+      value: RY
+      pins: [VDD, N1]
+    - id: RX
+      type: resistor
+      value: RX
+      pins: [N1, GND]
+    - id: Cext
+      type: capacitor
+      pins: [N1, N2]
+    - id: Q1
+      type: MOSFET
+      polarity: NMOS
+      pins:
+        gate: N1
+        drain: VDD
+        source: N2
+    - id: RS
+      type: resistor
+      value: RS
+      pins: [N2, GND]
+    - id: C2
+      type: capacitor
+      pins: [N2, Vout]
+      ac_behavior: short_circuit
+    - id: RL
+      type: resistor
+      value: RL
+      pins: [Vout, GND]
+    - id: CS
+      type: capacitor
+      value: CS
+      pins: [Vout, GND]
+
+specs:
+  given:
+    - "Ci_star > gm * RS * Cs_star"
+    - Ci_star: "Ci + Cext"
+    - Cs_star: "Cv + CS"
+  find:
+    - Av(Vout, Vin)
+    - Cext
+    - Fz(Vout, Vin)
+    - Fp(Vout, Vin)
