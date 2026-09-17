@@ -28,6 +28,7 @@ from ceml.models import (
 # Reserved words and functions (§8)
 RESERVED_MEASUREMENT = {"Vdc", "Vac", "Idc", "Iac", "Z"}
 RESERVED_BEHAVIORAL = {"Av", "Ai", "Rin", "Rout", "Zin", "Zout", "Zt", "Yt"}
+RESERVED_FREQUENCY_RESPONSE = {"Fp", "Fz", "Wp", "Wz"}
 RESERVED_TRANSISTOR = {
     "Vbe", "Vce", "Vbc", "Vgs", "Vds", "Vgd",
     "Ic", "Ib", "Ie", "Id", "Ig", "Is",
@@ -39,6 +40,7 @@ RESERVED_SPECIAL = {"Commercial", "Expr"}
 ALL_RESERVED_FUNCTIONS = (
     RESERVED_MEASUREMENT
     | RESERVED_BEHAVIORAL
+    | RESERVED_FREQUENCY_RESPONSE
     | RESERVED_TRANSISTOR
     | RESERVED_TWO_PORT
     | RESERVED_SPECIAL
@@ -641,5 +643,24 @@ def _validate_function_call(
                         ValidationError(
                             code="ERR_TWO_PORT_INDEX",
                             message=f"Two-port index must be 1 or 2, got '{idx}' in '{fn.name}'.",
+                        )
+                    )
+
+    elif fn.name in RESERVED_FREQUENCY_RESPONSE:
+        if len(fn.args) != 2:
+            errors.append(
+                ValidationError(
+                    code="ERR_FREQUENCY_RESPONSE_ARITY",
+                    message=f"Frequency-response function '{fn.name}' requires 2 node arguments (Vout, Vin), got {len(fn.args)}.",
+                )
+            )
+        else:
+            for node_ref in fn.args:
+                if node_ref not in circuit.nodes:
+                    errors.append(
+                        ValidationError(
+                            code="ERR_FREQUENCY_RESPONSE_UNDECLARED_NODE",
+                            message=f"Frequency-response function '{fn.name}' references undeclared node '{node_ref}'.",
+                            node_id=node_ref,
                         )
                     )

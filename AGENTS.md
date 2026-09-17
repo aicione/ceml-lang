@@ -116,5 +116,7 @@ This same convention applies to the embedded YAML examples inside `spec/ceml-v0.
 - Commit messages follow Conventional Commits (`feat(spec): ...`, `feat(examples): ...`), title
   under ~70 chars, with a bullet-point body referencing the Decision numbers involved when
   editing the spec.
+- Always provide suggested commit messages in English at the end of every completed task or
+  work session, including both the title and body, so the user can review and commit immediately.
 - Watch out for `git add` on `examples/` sweeping up unfinished `example_N.ci` stubs alongside a
   finished example that's ready to commit — add finished files by exact name.

@@ -13,3 +13,4 @@ For language-level specification decisions (syntax, semantics, and reserved word
 | [0003](0003-public-api-surface.md) | Public API surface definition (`ceml.__init__`) | Accepted | 2026-09-15 |
 | [0004](0004-testing-framework-and-virtualenv.md) | Adoption of pytest and virtual environment (`.venv`) | Accepted | 2026-09-15 |
 | [0005](0005-cli-interface-and-entrypoints.md) | Command Line Interface (CLI) and Entrypoints | Accepted | 2026-09-16 |
+| [0006](0006-frequency-response-and-symbolic-values.md) | Frequency-Response Functions and Symbolic Values (Decision #30) | Accepted | 2026-09-17 |

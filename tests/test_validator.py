@@ -200,3 +200,52 @@ components: []
     circuit = loads(yaml_text)
     with pytest.raises(CemlValidationError):
         validate(circuit, strict=True)
+
+
+def test_validator_frequency_response_functions():
+    yaml_text = """
+ceml_version: "0.1"
+circuit_id: "freq_resp_test"
+nodes:
+    - id: GND
+      type: ground
+    - id: Vin
+      type: input
+    - id: Vout
+      type: output
+components:
+    - id: R1
+      type: resistor
+      value: R1
+      pins: [Vin, Vout]
+specs:
+  find:
+    - Fp(Vout, Vin)
+    - Fz(Vout, Vin)
+    - Wp(Vout, Vin)
+    - Wz(Vout, Vin)
+"""
+    circuit = loads(yaml_text)
+    res = validate(circuit)
+    assert res.is_valid
+    assert len(res.errors) == 0
+
+
+def test_validator_frequency_response_invalid_arity():
+    yaml_text = """
+ceml_version: "0.1"
+circuit_id: "freq_resp_bad_arity"
+nodes:
+    - id: GND
+      type: ground
+    - id: Vin
+      type: input
+components: []
+specs:
+  find:
+    - Fp(Vin)
+"""
+    circuit = loads(yaml_text)
+    res = validate(circuit)
+    assert not res.is_valid
+    assert any(e.code == "ERR_FREQUENCY_RESPONSE_ARITY" for e in res.errors)

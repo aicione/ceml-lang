@@ -309,7 +309,7 @@ specs:
 
 - A component without a declared `value` **must** appear in `find` — otherwise it is a **fatal error**
 - Any behavioral parameter can appear in either `given` or `find`
-- Symbolic expressions are valid in `value` and `given`: e.g. `"2 * R1"`
+- Symbolic expressions and literal variables are valid in `value` and `given`: e.g. `"2 * R1"` or `value: RS`. In purely algebraic/symbolic circuit problems with no numeric values, assigning a literal variable name to `value` (e.g. `value: RS`, `value: RX`) designates the component value as a known symbolic parameter rather than an unknown, satisfying the declared-value requirement (Decision #30).
 - `given` may be omitted entirely when every known parameter is already captured by component
   `value` fields in `nodes`/`components` — there's nothing left to declare (e.g. a purely
   resistive network with an ideal opamp has no frequency, no transistor parameters, nothing
@@ -359,6 +359,17 @@ Yt(Iout, Vin, hf?)         → transconductance (A/V)
 > Argument is the literal token `hf` → **high-frequency model**: the full hybrid-π model applies, using each transistor's `Cpi(Q)`/`Cmu(Q)` (explicit `given` > part-number lookup > absent → 0 with warning, per Decision #22).
 > The same circuit's `find` list may freely mix both: e.g. `Av(Vout, Vin)` (mid-band) and `Av(Vout, Vin, hf)` (high-frequency) as separate entries, answering separate parts of the same question.
 > `hf` is only valid on the functions listed above. Passing it to a DC/quiescent function (`Vdc`, `Idc`, any transistor internal parameter function, `hfe(Q)`) or to `Commercial(...)` — none of which have a frequency-dependent variant — is a **fatal error**.
+
+### Reserved frequency-response functions
+```
+Fp(Vout, Vin)     → dominant pole frequency (Hz)
+Fz(Vout, Vin)     → dominant zero frequency (Hz)
+Wp(Vout, Vin)     → dominant pole angular frequency (rad/s, ωp)
+Wz(Vout, Vin)     → dominant zero angular frequency (rad/s, ωz)
+```
+> Evaluates the dominant pole or zero frequency of the transfer function between output node `Vout` and input node `Vin`.
+> `Fp` and `Fz` express frequency in Hertz ($f = \omega / 2\pi$), while `Wp` and `Wz` express angular frequency in radians per second ($\omega$).
+> Because poles and zeros are inherently high-frequency/transfer-function characteristics, the high-frequency model is automatically used and the trailing `hf` marker is not needed.
 
 ### Reserved transistor internal parameter functions
 ```
@@ -486,6 +497,7 @@ Expr(TARGET, VAR1, VAR2, ..., VARn)
 | 27 | `4k7` accepted as shorthand for `4.7k` (suffix-as-decimal-point, standard resistor marking convention) — equivalent and interchangeable with the `4.7k` form |
 | 28 | `given` may be omitted entirely when component `value` fields already capture everything known — avoids `given: null` from an empty key |
 | 29 | `Expr(TARGET, VAR1, ..., VARn)` reserved — first variable-arity function, returns a symbolic expression (not a number) for TARGET as a function of the VARs; find-only |
+| 30 | `Fp`/`Fz`/`Wp`/`Wz` reserved for dominant pole/zero frequencies (Hz and rad/s) between output and input nodes; explicit literal/symbolic component values (e.g. `value: RS`) supported for algebraic circuits without numeric values |
 
 ---
 

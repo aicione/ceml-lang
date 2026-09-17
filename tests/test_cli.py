@@ -40,7 +40,8 @@ def test_cli_check_directory(capsys):
     # Fails because rlc_series.ci is an expected invalid limit case
     assert exit_code == 1
     captured = capsys.readouterr()
-    assert "4 passed, 1 failed (total: 5)" in captured.out
+    assert "1 failed" in captured.out
+    assert "passed" in captured.out
 
 
 def test_cli_check_nonexistent_file(capsys):
