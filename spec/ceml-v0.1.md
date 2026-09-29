@@ -112,6 +112,7 @@ components:
 ### Accepted magnitude suffixes
 
 `p, n, u, m, k, M, G` — standard engineering notation.
+Uppercase `K` is accepted as a tolerant synonym for lowercase `k` (`10K` = `10k` = 10 kΩ, `3K3` = `3k3` = 3.3 kΩ), avoiding syntax errors from common typing habits without introducing ambiguity.
 
 ### Decimal notation
 
@@ -498,6 +499,7 @@ Expr(TARGET, VAR1, VAR2, ..., VARn)
 | 28 | `given` may be omitted entirely when component `value` fields already capture everything known — avoids `given: null` from an empty key |
 | 29 | `Expr(TARGET, VAR1, ..., VARn)` reserved — first variable-arity function, returns a symbolic expression (not a number) for TARGET as a function of the VARs; find-only |
 | 30 | `Fp`/`Fz`/`Wp`/`Wz` reserved for dominant pole/zero frequencies (Hz and rad/s) between output and input nodes; explicit literal/symbolic component values (e.g. `value: RS`) supported for algebraic circuits without numeric values |
+| 31 | `K` accepted as tolerant uppercase synonym for kilo (`k` = 1e3) without ambiguity; SI preference remains lowercase `k` |
 
 ---
 

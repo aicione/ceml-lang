@@ -41,15 +41,16 @@ MAGNITUDE_SUFFIXES: dict[str, float] = {
     "u": 1e-6,
     "m": 1e-3,
     "k": 1e3,
+    "K": 1e3,  # Tolerant uppercase K for kilo (Decision #31)
     "M": 1e6,
     "G": 1e9,
 }
 
-# Regex for shorthand notation: e.g. 4k7, 1k5, 3k9, 0m5
-RE_SHORTHAND = re.compile(r"^([+-]?[0-9]+)([pnumkMG])([0-9]+)$")
+# Regex for shorthand notation: e.g. 4k7, 3K3, 1k5, 3k9, 0m5
+RE_SHORTHAND = re.compile(r"^([+-]?[0-9]+)([pnumkKMG])([0-9]+)$")
 
-# Regex for standard suffix notation: e.g. 10k, 2m, 12p, -5k, 4.7k
-RE_STANDARD_SUFFIX = re.compile(r"^([+-]?[0-9]+(?:\.[0-9]+)?)([pnumkMG])$")
+# Regex for standard suffix notation: e.g. 10k, 10K, 2m, 12p, -5k, 4.7k
+RE_STANDARD_SUFFIX = re.compile(r"^([+-]?[0-9]+(?:\.[0-9]+)?)([pnumkKMG])$")
 
 # Regex for pure numbers: e.g. 12, -5, 0.7
 RE_BARE_NUMBER = re.compile(r"^([+-]?[0-9]+(?:\.[0-9]+)?)$")

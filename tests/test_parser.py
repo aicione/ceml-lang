@@ -24,6 +24,7 @@ def test_parse_engineering_value_pure_numbers():
 
 def test_parse_engineering_value_standard_suffixes():
     assert parse_engineering_value("10k").numeric == 10_000.0
+    assert parse_engineering_value("10K").numeric == 10_000.0  # Decision #31
     assert parse_engineering_value("2m").numeric == pytest.approx(0.002)
     assert parse_engineering_value("12p").numeric == pytest.approx(12e-12)
     assert parse_engineering_value("100u").numeric == pytest.approx(100e-6)
@@ -35,6 +36,11 @@ def test_parse_engineering_value_shorthand():
     v1 = parse_engineering_value("4k7")
     assert v1.numeric == 4700.0
     assert v1.raw == "4k7"
+
+    # Decision #31: 3K3 with uppercase K accepted as shorthand for 3.3k
+    v1_upper = parse_engineering_value("3K3")
+    assert v1_upper.numeric == 3300.0
+    assert v1_upper.raw == "3K3"
 
     v2 = parse_engineering_value("1k5")
     assert v2.numeric == 1500.0

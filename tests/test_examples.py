@@ -52,6 +52,15 @@ def test_example_cd_fet_source_follower_freq_response():
     assert len(report.errors) == 0
 
 
+def test_example_three_npn_feedback_amplifier():
+    ci_path = EXAMPLES_DIR / "three_npn_feedback_amplifier.ci"
+    circuit = ceml.load(ci_path)
+    report = ceml.validate(circuit)
+
+    assert report.is_valid, f"Unexpected errors: {[e.message for e in report.errors]}"
+    assert len(report.errors) == 0
+
+
 def test_example_rlc_series_expected_failure():
     """rlc_series.ci is a known limit case that MUST fail validation per spec §9.
 
