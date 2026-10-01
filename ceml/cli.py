@@ -237,7 +237,66 @@ def build_parser() -> argparse.ArgumentParser:
     )
     inspect_parser.set_defaults(func=command_inspect)
 
+    # Subcommand: render
+    render_parser = subparsers.add_parser(
+        "render",
+        aliases=["draw"],
+        help="Render a 2D circuit schematic diagram (.png, .svg, or .pdf).",
+    )
+    render_parser.add_argument(
+        "path",
+        help="Path to the .ci file to render.",
+    )
+    render_parser.add_argument(
+        "-o",
+        "--output",
+        help="Output image file path (defaults to <circuit_id>.png).",
+    )
+    render_parser.set_defaults(func=command_render)
+
     return parser
+
+
+def command_render(args: argparse.Namespace) -> int:
+    """Handles the 'render' subcommand to draw a circuit schematic to an image."""
+    enable_color = not args.no_color and sys.stdout.isatty()
+    p = Path(args.path)
+
+    if not p.exists():
+        print(
+            _colorize(f"Error: Path not found: {args.path}", COLOR_RED, enable_color),
+            file=sys.stderr,
+        )
+        return 1
+
+    try:
+        circuit = ceml.load(p)
+    except Exception as exc:
+        print(_colorize(f"Failed to load circuit: {exc}", COLOR_RED, enable_color), file=sys.stderr)
+        return 1
+
+    out_path = Path(args.output) if args.output else p.with_suffix(".png")
+
+    try:
+        from ceml.schematic import render_circuit
+        render_circuit(circuit, out_path)
+        print(_colorize(f"Schematic successfully generated: {out_path}", COLOR_GREEN, enable_color))
+        return 0
+    except ImportError as exc:
+        print(
+            _colorize(
+                f"Error: Rendering requires 'schemdraw' and 'matplotlib'.\n"
+                f"Install with: pip install 'ceml-lang[render]'",
+                COLOR_RED,
+                enable_color,
+            ),
+            file=sys.stderr,
+        )
+        return 1
+    except Exception as exc:
+        print(_colorize(f"Failed to render circuit schematic: {exc}", COLOR_RED, enable_color), file=sys.stderr)
+        return 1
+
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:

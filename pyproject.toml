@@ -18,6 +18,11 @@ dependencies = [
 dev = [
     "pytest>=8.0",
 ]
+render = [
+    "schemdraw>=0.20",
+    "matplotlib>=3.8",
+]
+
 
 [project.scripts]
 ceml = "ceml.cli:main"

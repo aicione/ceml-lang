@@ -23,11 +23,14 @@ from ceml.models import (
 )
 from ceml.parser import load, loads, CemlParseError
 from ceml.validator import validate, CemlValidationError
+from ceml.schematic import render_circuit
 
 __all__ = [
     "load",
     "loads",
     "validate",
+    "render_circuit",
+
     "Circuit",
     "Component",
     "Node",

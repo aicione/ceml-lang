@@ -22,3 +22,8 @@ htmlcov/
 build/
 dist/
 *.egg-info/
+
+# Test output artifacts
+tests/output/*.png
+tests/output/*.svg
+tests/output/*.pdf
