@@ -1,22 +1,32 @@
-# ceml-lang
+# CEML (`ceml-lang`)
 
-**CEML - Circuit Engineering Markup Language**
+**Circuit Engineering Markup Language (CEML)** is a declarative domain-specific language (DSL) and compiler pipeline designed to formally describe analog microelectronic circuits for **analytical reasoning, symbolic solving, and automated schematic synthesis**.
 
-The intermediary language of the project [AI.ciOne](https://github.com/aicione/aicione) to represent analytically electronic circuits.
+CEML acts as the formal representation layer for [AI.ciOne](https://github.com/aicione/aicione), bridging human circuit design, formal compiler abstract syntax trees (ASTs), and neuro-symbolic artificial intelligence.
 
 ---
 
-## What is the CEML ?
+## Why CEML? (Beyond SPICE)
 
-CEML is a declarative language to describe electronic circuits so that a LLM can analytically reason about it - not only numerically simulate.
+Traditional SPICE netlists were engineered decades ago for **numerical differential-equation simulation**. They treat circuits as matrices of numeric conductances:
+- SPICE does not differentiate physical operating regimes (DC quiescent bias vs. small-signal AC linearization vs. high-frequency dynamics).
+- SPICE does not semantically classify component roles (e.g., distinguishing bias dividers from AC bypass or coupling capacitors).
+- SPICE output is strictly `Circuit → Numerical Matrices`, making it opaque to symbolic solvers, Large Language Models (LLMs), and Graph Neural Networks (GNNs).
 
-CEML's files use the extension `.ci`
+**CEML inverts this paradigm:**
+$$\text{Design Specifications} \longrightarrow \text{Declarative Netlist } (.ci) \longrightarrow \text{Formal AST} \longrightarrow \begin{cases} \text{Symbolic Transfer Functions (AI.ciOne)} \\ \text{Vector Schematics (SchemDraw)} \end{cases}$$
+
+CEML represents circuits as high-level, human-readable, machine-verifiable structures containing explicit topological intent, known parameters (`given:`), and analytical targets (`find:`).
+
+---
+
+## Example Circuit (`.ci`)
 
 ```yaml
 ceml_version: "0.1"
 circuit_id: "ce_amplifier_01"
-description: "BJT NPN Amplifier in common emitter form"
- 
+description: "BJT NPN common-emitter amplifier with resistive bias"
+
 nodes:
     - id: GND
       type: ground
@@ -29,7 +39,7 @@ nodes:
       type: input
     - id: Vout
       type: output
- 
+
 components:
     - id: RC
       type: resistor
@@ -46,7 +56,7 @@ components:
         base: N2
         collector: N1
         emitter: GND
- 
+
 specs:
   given:
     - freq: 1k
@@ -55,37 +65,59 @@ specs:
     - Rin(Vin, GND)
     - Rout(Vout, GND)
 ```
----
-
-## Why not use SPICE (Language used in LTSpice)?
-
-The SPICE was designed for numeric simulation, not for analytic reasoning. It doesn't distinguish DC Polarization from small-signal AC model, doesn't differentiate semantically components with distinct roles (like coupling and bypass capacitors), and doesn't work with symbolic incognites. The pipeline are always `CIRCUIT → NUMBERS`, while CEML permits also `PROJECT SPECIFICATIONS → CIRCUIT → SYMBOLIC EXPRESSIONS`
 
 ---
 
-## Scope: what CEML/AI.ciOne is (and isn't) for
+## Compiler Architecture & Pipeline
 
-CEML's job is to **document a circuit** — topology, knowns, and unknowns. It makes no claim
-that every circuit written in CEML is solvable.
+```mermaid
+flowchart TD
+    A[".ci Source File"] --> B["YAML Front-End Loader"]
+    B --> C["AST Parser (ceml.parser)"]
+    C --> D["Circuit AST Model (ceml.models)"]
+    D --> E["Multi-Phase Validator (ceml.validator)<br>• Syntax & Pin Invariants<br>• DC Connectivity & Floating Nodes<br>• Active Device Checks"]
+    E --> F["Valid Circuit AST"]
+    F --> G["Visual Compiler (ceml.schematic)<br>• Graph Layout Planner<br>• SchemDraw 2D Vector Synthesis<br>(PNG / SVG / PDF)"]
+    F --> H["Analytical Solver (AI.ciOne)<br>• Nonlinear DC Bias (SymPy)<br>• AC Small-Signal Hybrid-π<br>• High-Frequency OCTC Poles"]
+```
 
-AI.ciOne's job is to **solve well-posed problems that converge to a definite result** —
-find the value(s) listed in `find`, given the circuit and the values in `given`. It is not
-meant to perform open-ended feasibility or justification analysis (e.g. "is it possible to
-determine R from this data? justify your answer") — a common style of exam question, but out
-of scope here. If a circuit's `find` targets are underdetermined by its `given` data, that's a
-property of the exam question, not something CEML/AI.ciOne is meant to route around or explain qualitatively.
+---
 
-See `examples/rlc_series.ci` for a worked case: only the AC voltage magnitudes across R, L
-and C are given (no source amplitude, frequency, or phase) — enough to solve for the source's
-amplitude via the phasor voltage triangle, but not enough to solve for R, L, or C individually.
-That file deliberately leaves R, L, C without a value and out of `find`, which fails CEML's own
-validation rule (§9) — that failure is intentional, not a bug.
+## Features & Capabilities
 
-**MVP scope note:** the MVP targets circuits with a single, well-posed solution — `given` fully
-determines every `find` target, no ambiguity. Circuits that admit multiple valid solutions (a
-real possibility once solving tools exist downstream) are explicitly out of scope for now. If the
-solvable-circuit approach proves out and the project moves past MVP, multiple-solution handling
-is the natural next frontier to tackle — not before.
+- **Strict Language Specification:** Governed by [`spec/ceml-v0.1.md`](spec/ceml-v0.1.md), defining canonical grammar, metric prefix notation (e.g. `4k7`, `2.2M`, `10p`), pin mappings, and 30 recorded language design decisions.
+- **Robust Semantic Validator:** Enforces topological well-formedness, ground reference requirements, polarity definitions, and solvability constraints prior to downstream execution.
+- **Visual Schematic Compiler (`ceml.schematic`):** Automatically analyzes circuit topology, separates supply/ground rails, plans planar stages (Common Emitter, Common Collector, Common Base, MOSFET Common Gate/Drain/Source), and synthesizes publication-grade vector schematics without wire crossings.
+- **Unified CLI:** Direct command-line interface for linting, AST inspection, and diagram rendering.
+- **Architecture Decision Records (ADRs):** Comprehensive architectural evolution documented under [`decisions/`](decisions/README.md).
+
+---
+
+## Quick Start
+
+### Installation
+
+```bash
+# Clone the repository
+git clone git@github.com:aicione/ceml-lang.git
+cd ceml-lang
+
+# Install with development and rendering extras
+pip install -e ".[dev,render]"
+```
+
+### Command-Line Usage
+
+```bash
+# 1. Validate a circuit specification against the formal grammar
+ceml check examples/ce_partial_bypass_coupled_load.ci
+
+# 2. Inspect the extracted AST model, nodes, and device pins
+ceml inspect examples/ce_partial_bypass_coupled_load.ci
+
+# 3. Render publication-grade circuit schematic (.png, .svg, or .pdf)
+ceml render examples/ce_partial_bypass_coupled_load.ci -o schematic.png
+```
 
 ---
 
@@ -94,42 +126,41 @@ is the natural next frontier to tackle — not before.
 ```
 ceml-lang/
 ├── spec/
-│   └── ceml-v0.1.md        ← complete formal specification of the language
-├── examples/
-│   └── ce_amplifier.ci     ← real circuits examples (soon)
+│   └── ceml-v0.1.md         # Formal language specification & decision records
+├── decisions/               # Architecture Decision Records (ADR 0001 - 0008)
+├── examples/                # Worked analog circuit benchmarks (.ci)
 ├── ceml/
-│   ├── parser.py           ← read the .ci file and transform in data structure
-│   ├── validator.py        ← verify mistakes, alerts and suggestions
-│   └── models.py           ← dataclasses/Pydantic of components and nodes
-├── LICENSE
+│   ├── __init__.py          # Public API (load, loads, validate, render_circuit)
+│   ├── models.py            # Strongly-typed AST dataclasses
+│   ├── parser.py            # Parser and syntax builder
+│   ├── validator.py         # Multi-phase semantic validation rules
+│   ├── cli.py               # CLI entrypoint (check, inspect, render)
+│   └── schematic/           # 2D Visual schematic compilation engine
+│       ├── elements.py      # SchemDraw primitive mapping & polarity
+│       ├── layout.py        # Graph topology analysis & stage coordinates
+│       └── renderer.py      # Orthogonal planar drawing builder
+├── tests/                   # Test suite (39 automated pytest tests)
+│   └── output/              # Generated visual schematic test artifacts
+├── pyproject.toml           # Project configuration & dependencies
 └── README.md
 ```
 
 ---
 
-## Supported Components
+## Architecture Decision Records (ADRs)
 
-**Passives:** `resistor`, `capacitor` and `inductor`
+Key architectural choices are formally tracked in [`decisions/`](decisions/README.md):
+- [ADR 0001](decisions/0001-adoption-of-adrs.md): Adoption of Architecture Decision Records
+- [ADR 0002](decisions/0002-formal-spec-as-source-of-truth.md): Formal Specification as Single Source of Truth
+- [ADR 0003](decisions/0003-ast-data-model-design.md): AST Data Model Design
+- [ADR 0004](decisions/0004-testing-framework-and-virtualenv.md): Adoption of Pytest and Virtual Environment
+- [ADR 0005](decisions/0005-cli-interface-and-entrypoints.md): Command Line Interface (CLI) and Entrypoints
+- [ADR 0006](decisions/0006-frequency-response-and-symbolic-values.md): Frequency-Response Functions and Symbolic Values
+- [ADR 0007](decisions/0007-separation-of-concerns-and-aicione-solver-delegation.md): Separation of Concerns & Solver Delegation to AI.ciOne
+- [ADR 0008](decisions/0008-schematic-rendering-engine-and-schemdraw-mapping.md): Visual Schematic Rendering Engine & SchemDraw Mapping
 
-**Semiconductors:** `BJT` (NPN/PNP), `MOSFET` (NMOS/PMOS), `JFET` (N/P), `diode`
- 
-**Independent Sources:** `voltage_source`, `current_source` (DC or AC)
- 
-**Dependent Sources:** `VCVS`, `VCCS`, `CCVS`, `CCCS`
- 
-**Complex components:** `opamp`
- 
 ---
- 
-## Status
- 
-> Project in active specification — v0.1 in construction
- 
-Part of project [AI.ciOne](https://github.com/aicione/aicione).
- 
----
- 
+
 ## License
- 
-MIT License — see [LICENSE](./LICENSE).
- 
+
+MIT License — see [LICENSE](LICENSE).
