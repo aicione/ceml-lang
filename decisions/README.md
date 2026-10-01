@@ -14,3 +14,6 @@ For language-level specification decisions (syntax, semantics, and reserved word
 | [0004](0004-testing-framework-and-virtualenv.md) | Adoption of pytest and virtual environment (`.venv`) | Accepted | 2026-09-15 |
 | [0005](0005-cli-interface-and-entrypoints.md) | Command Line Interface (CLI) and Entrypoints | Accepted | 2026-09-16 |
 | [0006](0006-frequency-response-and-symbolic-values.md) | Frequency-Response Functions and Symbolic Values (Decision #30) | Accepted | 2026-09-17 |
+| [0007](0007-separation-of-concerns-and-aicione-solver-delegation.md) | Separation of Concerns, Dedicated Solver Repository (aicione), and Language Scope | Accepted | 2026-10-01 |
+| [0008](0008-schematic-rendering-engine-and-schemdraw-mapping.md) | Visual Schematic Rendering Engine and SchemDraw Mapping (ceml.schematic) | Accepted | 2026-10-01 |
+
